@@ -12,13 +12,48 @@ import gsap from "../lib/gsap";
 
 const Scene = lazy(() => import("./3d/Scene"));
 
+/** Hero 3D is heavy on phones; static backdrop avoids slow loads & WebGL tab reloads. */
+const HERO_WEBGL_MIN_WIDTH = 768;
+const SESSION_LOADER_KEY = "ripesfood_hero_loader_done_v2";
+/** Old flag skipped the loader forever after one visit — remove so behavior is predictable. */
+const LEGACY_LOADER_KEY = "ripesfood_hero_3d_ready_v1";
+
+function readUseHeroWebgl() {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia(`(min-width: ${HERO_WEBGL_MIN_WIDTH}px)`).matches;
+}
+
+function isReloadNavigation() {
+  try {
+    const nav = performance.getEntriesByType("navigation")[0];
+    if (nav && typeof nav.type === "string") return nav.type === "reload";
+  } catch {
+    /* ignore */
+  }
+  try {
+    const { navigation } = performance;
+    return typeof navigation !== "undefined" && navigation.type === 1;
+  } catch {
+    return false;
+  }
+}
+
+function readInitialLoaderVisible(webglEnabled) {
+  if (typeof window === "undefined") return true;
+  if (!webglEnabled) return false;
+  try {
+    if (isReloadNavigation()) return true;
+    return sessionStorage.getItem(SESSION_LOADER_KEY) !== "1";
+  } catch {
+    return true;
+  }
+}
+
 export default function Hero() {
   const sectionRef = useRef(null);
   const headingRef = useRef(null);
   const subRef = useRef(null);
   const buttonRef = useRef(null);
-
-  const LOADER_KEY = "ripesfood_hero_3d_ready_v1";
 
   const loaderMessages = [
     "Importing fresh supply",
@@ -33,19 +68,16 @@ export default function Hero() {
   const [typedHeading, setTypedHeading] = useState("");
   const [typedSub, setTypedSub] = useState("");
 
-  const [show3dLoader, setShow3dLoader] = useState(() => {
-    if (typeof window === "undefined") return true;
-    try {
-      const ready = window.localStorage.getItem(LOADER_KEY) === "1";
-      return !ready;
-    } catch {
-      return true;
-    }
-  });
+  const [useHeroWebgl, setUseHeroWebgl] = useState(() => readUseHeroWebgl());
+  const [show3dLoader, setShow3dLoader] = useState(() =>
+    readInitialLoaderVisible(readUseHeroWebgl()),
+  );
   const [loaderMsgIndex, setLoaderMsgIndex] = useState(0);
   const [loaderPercent, setLoaderPercent] = useState(0);
-  const loaderPercentIntervalRef = useRef(null);
   const hideLoaderTimeoutRef = useRef(null);
+  const loaderDoneRef = useRef(false);
+  const loaderTickRef = useRef(null);
+  const loaderMaxWaitRef = useRef(null);
 
   const glowRef = useRef(null);
   const glowTweenRef = useRef(null);
@@ -55,13 +87,23 @@ export default function Hero() {
   const typingTimeoutsRef = useRef([]);
 
   useEffect(() => {
-    // Show the loader only on first visit (per browser).
     try {
-      const ready = window.localStorage.getItem(LOADER_KEY) === "1";
-      setShow3dLoader(!ready);
+      window.localStorage.removeItem(LEGACY_LOADER_KEY);
     } catch {
-      setShow3dLoader(false);
+      // ignore
     }
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia(`(min-width: ${HERO_WEBGL_MIN_WIDTH}px)`);
+    const sync = () => {
+      const next = mq.matches;
+      setUseHeroWebgl(next);
+      if (!next) setShow3dLoader(false);
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
@@ -75,41 +117,25 @@ export default function Hero() {
     return () => window.clearInterval(id);
   }, [show3dLoader]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!show3dLoader) return;
+  const finishHeroLoader = useCallback(() => {
+    if (loaderDoneRef.current) return;
+    loaderDoneRef.current = true;
 
-    setLoaderPercent(3);
-
-    // Fake-but-smooth progress until the model is ready.
-    // We cap before 100 to avoid “lying” that the model is already done.
-    loaderPercentIntervalRef.current = window.setInterval(() => {
-      setLoaderPercent((p) => {
-        if (p >= 92) return p;
-        const bump = Math.random() * 3.6 + 1.1;
-        return Math.min(92, p + bump);
-      });
-    }, 180);
-
-    return () => {
-      if (loaderPercentIntervalRef.current) {
-        window.clearInterval(loaderPercentIntervalRef.current);
-        loaderPercentIntervalRef.current = null;
-      }
-    };
-  }, [show3dLoader]);
-
-  const handleSceneModelReady = useCallback(() => {
     try {
-      window.localStorage.setItem(LOADER_KEY, "1");
+      sessionStorage.setItem(SESSION_LOADER_KEY, "1");
     } catch {
       // ignore
     }
 
-    // Finish progress and hide shortly after.
-    if (loaderPercentIntervalRef.current) {
-      window.clearInterval(loaderPercentIntervalRef.current);
-      loaderPercentIntervalRef.current = null;
+    if (loaderTickRef.current) {
+      window.clearInterval(loaderTickRef.current);
+      loaderTickRef.current = null;
     }
+    if (loaderMaxWaitRef.current) {
+      window.clearTimeout(loaderMaxWaitRef.current);
+      loaderMaxWaitRef.current = null;
+    }
+
     setLoaderPercent(100);
 
     if (hideLoaderTimeoutRef.current) {
@@ -117,8 +143,45 @@ export default function Hero() {
     }
     hideLoaderTimeoutRef.current = window.setTimeout(() => {
       setShow3dLoader(false);
-    }, 450);
+    }, 400);
   }, []);
+
+  useEffect(() => {
+    if (!show3dLoader) return;
+
+    loaderDoneRef.current = false;
+    setLoaderPercent(2);
+
+    const start = Date.now();
+    const maxWaitMs = 9000;
+
+    loaderTickRef.current = window.setInterval(() => {
+      if (loaderDoneRef.current) return;
+      const elapsed = Date.now() - start;
+      const asymptotic = 100 * (1 - Math.exp(-elapsed / 2800));
+      const next = Math.min(99, Math.floor(asymptotic));
+      setLoaderPercent((prev) => Math.max(prev, next));
+    }, 100);
+
+    loaderMaxWaitRef.current = window.setTimeout(() => {
+      finishHeroLoader();
+    }, maxWaitMs);
+
+    return () => {
+      if (loaderTickRef.current) {
+        window.clearInterval(loaderTickRef.current);
+        loaderTickRef.current = null;
+      }
+      if (loaderMaxWaitRef.current) {
+        window.clearTimeout(loaderMaxWaitRef.current);
+        loaderMaxWaitRef.current = null;
+      }
+    };
+  }, [show3dLoader, finishHeroLoader]);
+
+  const handleSceneModelReady = useCallback(() => {
+    finishHeroLoader();
+  }, [finishHeroLoader]);
 
   const clearTypingTimers = useCallback(() => {
     typingTimeoutsRef.current.forEach((t) => window.clearTimeout(t));
@@ -325,9 +388,16 @@ export default function Hero() {
         <div className="absolute inset-0 bg-linear-to-b from-black/55 via-black/15 to-black/55" />
         {/* No scale on small screens — scale + WebGL canvas often causes horizontal overflow. */}
         <div className="absolute inset-0 origin-center scale-100 md:scale-105 lg:scale-[1.12]">
-          <Suspense fallback={null}>
-            <Scene onModelReady={handleSceneModelReady} />
-          </Suspense>
+          {useHeroWebgl ? (
+            <Suspense fallback={null}>
+              <Scene onModelReady={handleSceneModelReady} />
+            </Suspense>
+          ) : (
+            <div className="absolute inset-0" aria-hidden>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_88%_70%_at_50%_38%,rgba(249,115,22,0.2),transparent_58%),radial-gradient(ellipse_65%_55%_at_72%_62%,rgba(52,211,153,0.12),transparent_52%)]" />
+              <div className="absolute inset-0 bg-linear-to-b from-black/45 via-transparent to-black/75" />
+            </div>
+          )}
         </div>
       </div>
 

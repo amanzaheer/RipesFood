@@ -144,7 +144,8 @@ function ParticleField({ mouseTarget }) {
       };
     };
 
-    const count = 160;
+    const count =
+      typeof window !== "undefined" && window.innerWidth < 768 ? 48 : 140;
     const positions = new Float32Array(count * 3);
     const seeds = new Float32Array(count);
     const rng = mulberry32(123456);
@@ -235,15 +236,18 @@ export default function Scene({ onModelReady }) {
     return () => window.removeEventListener("pointermove", onPointerMove);
   }, []);
 
+  const narrowGl =
+    typeof window !== "undefined" && window.innerWidth < 1024;
+
   return (
     <Canvas
       className="block h-full w-full max-w-full min-h-dvh overflow-hidden pointer-events-none select-none"
-      dpr={[1, 2]}
+      dpr={narrowGl ? 1 : [1, 1.5]}
       camera={{ position: [0, 0, 4.9], fov: 42 }}
       gl={{
-        antialias: true,
+        antialias: !narrowGl,
         alpha: false,
-        powerPreference: "high-performance",
+        powerPreference: narrowGl ? "default" : "high-performance",
       }}
       onCreated={({ gl }) => {
         const setBg = () => {
