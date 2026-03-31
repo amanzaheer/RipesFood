@@ -79,3 +79,54 @@ body {
       0 10px 32px -10px rgba(37, 211, 102, 0.6);
   }
 }
+
+/* Products: very light ambient motion so cards feel alive (no heavy effects) */
+@keyframes product-card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .product-card-float {
+    animation: product-card-float 6s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card-float {
+    animation: none;
+  }
+}
+
+/* Products: slow automatic zoom on card images (smooth, subtle) */
+@keyframes product-card-image-zoom {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .product-card-image-auto-zoom {
+    animation: product-card-image-zoom 20s ease-in-out infinite;
+    transform-origin: center center;
+  }
+
+  .group:hover .product-card-image-auto-zoom {
+    animation-play-state: paused;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-card-image-auto-zoom {
+    animation: none;
+  }
+}

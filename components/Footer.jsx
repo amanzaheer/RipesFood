@@ -21,8 +21,21 @@ export default function Footer() {
       <div className="relative mx-auto max-w-7xl px-6 py-14 sm:px-10 lg:px-16 lg:py-16">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-5">
-            <p className="text-lg font-semibold tracking-tight">RipesFood</p>
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-white/65">
+            <a
+              href="#home"
+              className="inline-flex focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-950 rounded-lg"
+            >
+              <img
+                src="/logoripes.png"
+                alt="RipesFood"
+                width={160}
+                height={48}
+                className="h-9 w-auto object-contain object-left sm:h-10"
+                loading="lazy"
+                decoding="async"
+              />
+            </a>
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-white/65">
               Premium import &amp; export of fruits, vegetables, grains, and
               pulses—quality sourcing and reliable delivery worldwide.
             </p>

@@ -90,14 +90,15 @@ export default function Products() {
         },
       );
 
-      cards.forEach((card) => {
+      cards.forEach((card, index) => {
         gsap.fromTo(
           card,
-          { opacity: 0, y: 14 },
+          { opacity: 0, y: 18 },
           {
             opacity: 1,
             y: 0,
-            duration: 0.45,
+            duration: 0.55,
+            delay: index * 0.07,
             ease: "power2.out",
             scrollTrigger: {
               trigger: card,
@@ -165,15 +166,24 @@ export default function Products() {
                   {String(index + 1).padStart(2, "0")}
                 </div>
 
-                <div className="relative w-full max-w-full overflow-hidden rounded-2xl border border-white/15 bg-white/4 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.8)] backdrop-blur-sm transition-[border-color,box-shadow,background-color] duration-300 ease-out group-hover:border-white/22 group-hover:bg-white/[0.06] group-hover:shadow-[0_28px_90px_-28px_rgba(0,0,0,0.75)]">
+                <div
+                  className="product-card-float relative w-full max-w-full"
+                  style={{ animationDelay: `${index * 1.15}s` }}
+                >
+                  <div className="relative w-full max-w-full overflow-hidden rounded-2xl border border-white/15 bg-white/4 shadow-[0_24px_80px_-30px_rgba(0,0,0,0.8)] backdrop-blur-sm transition-[transform,border-color,box-shadow,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:border-white/22 group-hover:bg-white/[0.06] group-hover:shadow-[0_32px_100px_-32px_rgba(249,115,22,0.12),0_28px_90px_-28px_rgba(0,0,0,0.78)]">
                   <div className="grid w-full min-h-0 gap-0 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-stretch md:h-[clamp(18rem,42vw,22rem)]">
                     <div className="relative aspect-16/10 w-full min-h-0 shrink-0 overflow-hidden md:aspect-auto md:h-full">
-                      <img
-                        src={product.image}
-                        alt={product.title}
-                        loading={index < 2 ? "eager" : "lazy"}
-                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.02]"
-                      />
+                      <div
+                        className="product-card-image-auto-zoom absolute inset-0"
+                        style={{ animationDelay: `${index * 3.2}s` }}
+                      >
+                        <img
+                          src={product.image}
+                          alt={product.title}
+                          loading={index < 2 ? "eager" : "lazy"}
+                          className="absolute inset-0 h-full w-full object-cover transition-[transform,filter] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.05] group-hover:brightness-[1.05]"
+                        />
+                      </div>
                       <div className="pointer-events-none absolute inset-0 z-1 bg-linear-to-t from-black/55 via-black/5 to-transparent" />
                     </div>
 
@@ -189,6 +199,7 @@ export default function Products() {
                         global shipping with premium standards.
                       </p>
                     </div>
+                  </div>
                   </div>
                 </div>
               </article>
