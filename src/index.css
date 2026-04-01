@@ -130,3 +130,54 @@ body {
     animation: none;
   }
 }
+
+/* Hero: slow “globe” drift for import/export mood (no WebGL) */
+@keyframes hero-earth-surface-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hero-earth-grid-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes hero-earth-drift {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -52%) scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-earth-anchor {
+    animation: hero-earth-drift 18s ease-in-out infinite;
+  }
+
+  .hero-earth-surface {
+    animation: hero-earth-surface-spin 90s linear infinite;
+  }
+
+  .hero-earth-grid {
+    animation: hero-earth-grid-spin 120s linear infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-earth-anchor,
+  .hero-earth-surface,
+  .hero-earth-grid {
+    animation: none;
+  }
+}

@@ -100,12 +100,12 @@ export default function GlobalReach() {
       copyBlock,
       { opacity: 0, y: 24 },
       { opacity: 1, y: 0, duration: 1, ease: "none" },
-      0
+      0,
     ).fromTo(
       mapColumn,
       { opacity: 0, y: 18, scale: 0.97 },
       { opacity: 1, y: 0, scale: 1, duration: 1.05, ease: "none" },
-      0.12
+      0.12,
     );
 
     const routePathEls = routeDefs
@@ -156,7 +156,10 @@ export default function GlobalReach() {
       const angle = Math.atan2(pt2.y - pt.y, pt2.x - pt.x);
 
       const deg = (angle * 180) / Math.PI;
-      plane.setAttribute("transform", `translate(${pt.x} ${pt.y}) rotate(${deg})`);
+      plane.setAttribute(
+        "transform",
+        `translate(${pt.x} ${pt.y}) rotate(${deg})`,
+      );
     };
 
     let drawTl = null;
@@ -212,8 +215,14 @@ export default function GlobalReach() {
         const innerEl = markerInnerRefs.current[d.key];
         if (!groupEl || !innerEl) return;
 
-        gsap.set(groupEl, { transformOrigin: "center", transformBox: "fill-box" });
-        gsap.set(innerEl, { transformOrigin: "center", transformBox: "fill-box" });
+        gsap.set(groupEl, {
+          transformOrigin: "center",
+          transformBox: "fill-box",
+        });
+        gsap.set(innerEl, {
+          transformOrigin: "center",
+          transformBox: "fill-box",
+        });
 
         gsap.to(groupEl, {
           scale: 1.35,
@@ -330,22 +339,32 @@ export default function GlobalReach() {
               Delivering premium agricultural exports worldwide
             </h2>
             <p className="mt-5 text-base leading-relaxed text-white/70 sm:text-lg">
-              Delivering premium agricultural products across international markets.
+              Delivering premium agricultural products across international
+              markets.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3 text-sm text-white/70">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden />
+                <span
+                  className="h-2 w-2 rounded-full bg-emerald-400"
+                  aria-hidden
+                />
                 Routes from Pakistan
               </span>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                <span className="h-2 w-2 rounded-full bg-yellow-400" aria-hidden />
+                <span
+                  className="h-2 w-2 rounded-full bg-yellow-400"
+                  aria-hidden
+                />
                 UAE · Saudi · UK · USA · China
               </span>
             </div>
           </div>
 
-          <div ref={mapColumnRef} className="relative z-10 min-h-[320px] lg:min-h-[380px]">
+          <div
+            ref={mapColumnRef}
+            className="relative z-10 min-h-[320px] lg:min-h-[380px]"
+          >
             {/* Tooltip */}
             <div
               ref={tooltipRef}
@@ -493,4 +512,3 @@ export default function GlobalReach() {
     </section>
   );
 }
-

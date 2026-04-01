@@ -1,52 +1,133 @@
 "use client";
 
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "../lib/gsap";
 
-const Scene = lazy(() => import("./3d/Scene"));
+const HERO_CONTAINER_SRC = ["/c11.png", "/c22.png", "/c33.png"];
 
-/** Hero 3D is heavy on phones; static backdrop avoids slow loads & WebGL tab reloads. */
-const HERO_WEBGL_MIN_WIDTH = 768;
-const SESSION_LOADER_KEY = "ripesfood_hero_loader_done_v2";
-/** Old flag skipped the loader forever after one visit — remove so behavior is predictable. */
-const LEGACY_LOADER_KEY = "ripesfood_hero_3d_ready_v1";
+/** Keyframe loops (px / deg) — Framer Motion drives the inner wrapper so motion always runs in React. */
+const HERO_CONTAINER_MOTION = [
+  {
+    animate: {
+      x: [0, 24, -18, -20, 0],
+      y: [0, -18, 20, -14, 0],
+      rotate: [-1.5, 3.5, -2.2, 2, -1.5],
+    },
+    transition: { duration: 12, repeat: Infinity, ease: "easeInOut" },
+  },
+  {
+    animate: {
+      x: [0, -22, 18, 14, 0],
+      y: [0, 14, -20, 16, 0],
+      rotate: [1.5, -2.8, 2.5, -1.6, 1.5],
+    },
+    transition: { duration: 13.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 },
+  },
+  {
+    animate: {
+      x: [0, 18, -22, -12, 0],
+      y: [0, 20, -14, 22, 0],
+      rotate: [0.8, -2.5, 2.2, -1.2, 0.8],
+    },
+    transition: { duration: 11, repeat: Infinity, ease: "easeInOut", delay: 1.1 },
+  },
+];
 
-function readUseHeroWebgl() {
-  if (typeof window === "undefined") return true;
-  return window.matchMedia(`(min-width: ${HERO_WEBGL_MIN_WIDTH}px)`).matches;
+function HeroEarthBackdrop() {
+  return (
+    <div
+      className="hero-earth-anchor pointer-events-none absolute left-1/2 top-[40%] z-0 h-[min(140vw,120vh)] w-[min(140vw,120vh)] -translate-x-1/2 -translate-y-1/2 md:top-[38%]"
+      aria-hidden
+    >
+      <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_32%_28%,rgba(56,189,248,0.22),transparent_42%),radial-gradient(circle_at_68%_58%,rgba(16,185,129,0.2),transparent_45%),radial-gradient(circle_at_48%_72%,rgba(251,191,36,0.08),transparent_38%),radial-gradient(circle_at_50%_50%,#0c1a2e_0%,#030712_72%)] shadow-[inset_0_0_80px_rgba(0,0,0,0.65)]" />
+      <div
+        className="hero-earth-surface absolute inset-[3%] rounded-full opacity-90 mix-blend-screen"
+        style={{
+          background: `
+            radial-gradient(ellipse 55% 40% at 28% 35%, rgba(34,197,94,0.35), transparent 50%),
+            radial-gradient(ellipse 45% 38% at 62% 42%, rgba(59,130,246,0.25), transparent 48%),
+            radial-gradient(ellipse 50% 45% at 48% 68%, rgba(234,179,8,0.12), transparent 52%),
+            radial-gradient(circle at 50% 50%, rgba(15,23,42,0.2), transparent 70%)
+          `,
+        }}
+      />
+      <div
+        className="hero-earth-grid absolute inset-[2%] rounded-full opacity-[0.35]"
+        style={{
+          background: `
+            repeating-conic-gradient(
+              from 0deg at 50% 50%,
+              transparent 0deg 11deg,
+              rgba(148,163,184,0.12) 11deg 11.35deg
+            )
+          `,
+          maskImage: "radial-gradient(circle at 50% 50%, black 0%, black 48%, transparent 70%)",
+          WebkitMaskImage:
+            "radial-gradient(circle at 50% 50%, black 0%, black 48%, transparent 70%)",
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_72%_22%,rgba(255,255,255,0.14),transparent_28%)]" />
+    </div>
+  );
 }
 
-function isReloadNavigation() {
-  try {
-    const nav = performance.getEntriesByType("navigation")[0];
-    if (nav && typeof nav.type === "string") return nav.type === "reload";
-  } catch {
-    /* ignore */
-  }
-  try {
-    const { navigation } = performance;
-    return typeof navigation !== "undefined" && navigation.type === 1;
-  } catch {
-    return false;
-  }
-}
+function HeroContainerFigures() {
+  const reduceMotion = useReducedMotion();
+  const isReduced = reduceMotion === true;
 
-function readInitialLoaderVisible(webglEnabled) {
-  if (typeof window === "undefined") return true;
-  if (!webglEnabled) return false;
-  try {
-    if (isReloadNavigation()) return true;
-    return sessionStorage.getItem(SESSION_LOADER_KEY) !== "1";
-  } catch {
-    return true;
-  }
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+      aria-hidden
+    >
+      {HERO_CONTAINER_SRC.map((src, i) => {
+        const cfg = HERO_CONTAINER_MOTION[i];
+        const subtle = isReduced
+          ? {
+              animate: { x: [0, 5, -4, 0], y: [0, -4, 5, 0], rotate: [0, 0.8, -0.8, 0] },
+              transition: {
+                duration: 16,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: i * 0.4,
+              },
+            }
+          : { animate: cfg.animate, transition: cfg.transition };
+
+        return (
+          <div
+            key={src}
+            className={`absolute ${
+              i === 0
+                ? "bottom-[10%] left-[-2%] w-[min(48vw,240px)] sm:bottom-[14%] sm:left-[1%] sm:w-[min(40vw,280px)] md:bottom-[12%] md:left-[3%] md:w-[min(32vw,340px)]"
+                : i === 1
+                  ? "right-[-4%] top-[16%] w-[min(44vw,220px)] sm:right-[0%] sm:top-[18%] sm:w-[min(36vw,260px)] md:right-[4%] md:top-[14%] md:w-[min(28vw,300px)]"
+                  : "bottom-[6%] right-[4%] w-[min(40vw,200px)] sm:bottom-[8%] sm:right-[8%] sm:w-[min(34vw,240px)] md:bottom-[10%] md:right-[10%] md:w-[min(26vw,280px)]"
+            }`}
+          >
+            <motion.div
+              className="w-full will-change-transform"
+              style={{ transformOrigin: "50% 55%" }}
+              initial={false}
+              animate={subtle.animate}
+              transition={subtle.transition}
+            >
+              <img
+                src={src}
+                alt=""
+                width={800}
+                height={800}
+                className="h-auto w-full select-none object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.55)]"
+                decoding="async"
+                fetchPriority="high"
+              />
+            </motion.div>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function Hero() {
@@ -55,29 +136,12 @@ export default function Hero() {
   const subRef = useRef(null);
   const buttonRef = useRef(null);
 
-  const loaderMessages = [
-    "Importing fresh supply",
-    "Preparing export routes",
-    "Packaging quality for delivery",
-  ];
-
   const fullHeading = "Good Products. Fast Delivery.";
   const fullSub =
     "Fruits, vegetables, grains & pulses—trusted import/export partners for reliability and repeat business.";
 
   const [typedHeading, setTypedHeading] = useState("");
   const [typedSub, setTypedSub] = useState("");
-
-  const [useHeroWebgl, setUseHeroWebgl] = useState(() => readUseHeroWebgl());
-  const [show3dLoader, setShow3dLoader] = useState(() =>
-    readInitialLoaderVisible(readUseHeroWebgl()),
-  );
-  const [loaderMsgIndex, setLoaderMsgIndex] = useState(0);
-  const [loaderPercent, setLoaderPercent] = useState(0);
-  const hideLoaderTimeoutRef = useRef(null);
-  const loaderDoneRef = useRef(false);
-  const loaderTickRef = useRef(null);
-  const loaderMaxWaitRef = useRef(null);
 
   const glowRef = useRef(null);
   const glowTweenRef = useRef(null);
@@ -86,111 +150,12 @@ export default function Hero() {
   const typingRunIdRef = useRef(0);
   const typingTimeoutsRef = useRef([]);
 
-  useEffect(() => {
-    try {
-      window.localStorage.removeItem(LEGACY_LOADER_KEY);
-    } catch {
-      // ignore
-    }
-  }, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia(`(min-width: ${HERO_WEBGL_MIN_WIDTH}px)`);
-    const sync = () => {
-      const next = mq.matches;
-      setUseHeroWebgl(next);
-      if (!next) setShow3dLoader(false);
-    };
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-
-  useEffect(() => {
-    if (!show3dLoader) return;
-
-    setLoaderMsgIndex(0);
-    const id = window.setInterval(() => {
-      setLoaderMsgIndex((i) => (i + 1) % loaderMessages.length);
-    }, 1400);
-
-    return () => window.clearInterval(id);
-  }, [show3dLoader]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const finishHeroLoader = useCallback(() => {
-    if (loaderDoneRef.current) return;
-    loaderDoneRef.current = true;
-
-    try {
-      sessionStorage.setItem(SESSION_LOADER_KEY, "1");
-    } catch {
-      // ignore
-    }
-
-    if (loaderTickRef.current) {
-      window.clearInterval(loaderTickRef.current);
-      loaderTickRef.current = null;
-    }
-    if (loaderMaxWaitRef.current) {
-      window.clearTimeout(loaderMaxWaitRef.current);
-      loaderMaxWaitRef.current = null;
-    }
-
-    setLoaderPercent(100);
-
-    if (hideLoaderTimeoutRef.current) {
-      window.clearTimeout(hideLoaderTimeoutRef.current);
-    }
-    hideLoaderTimeoutRef.current = window.setTimeout(() => {
-      setShow3dLoader(false);
-    }, 400);
-  }, []);
-
-  useEffect(() => {
-    if (!show3dLoader) return;
-
-    loaderDoneRef.current = false;
-    setLoaderPercent(2);
-
-    const start = Date.now();
-    const maxWaitMs = 9000;
-
-    loaderTickRef.current = window.setInterval(() => {
-      if (loaderDoneRef.current) return;
-      const elapsed = Date.now() - start;
-      const asymptotic = 100 * (1 - Math.exp(-elapsed / 2800));
-      const next = Math.min(99, Math.floor(asymptotic));
-      setLoaderPercent((prev) => Math.max(prev, next));
-    }, 100);
-
-    loaderMaxWaitRef.current = window.setTimeout(() => {
-      finishHeroLoader();
-    }, maxWaitMs);
-
-    return () => {
-      if (loaderTickRef.current) {
-        window.clearInterval(loaderTickRef.current);
-        loaderTickRef.current = null;
-      }
-      if (loaderMaxWaitRef.current) {
-        window.clearTimeout(loaderMaxWaitRef.current);
-        loaderMaxWaitRef.current = null;
-      }
-    };
-  }, [show3dLoader, finishHeroLoader]);
-
-  const handleSceneModelReady = useCallback(() => {
-    finishHeroLoader();
-  }, [finishHeroLoader]);
-
   const clearTypingTimers = useCallback(() => {
     typingTimeoutsRef.current.forEach((t) => window.clearTimeout(t));
     typingTimeoutsRef.current = [];
   }, []);
 
   const startTyping = useCallback(() => {
-    if (show3dLoader) return;
-
     clearTypingTimers();
     typingRunIdRef.current += 1;
     const runId = typingRunIdRef.current;
@@ -245,7 +210,7 @@ export default function Hero() {
     typeChar(fullHeading, setTypedHeading, 18, () => {
       typeChar(fullSub, setTypedSub, 9);
     });
-  }, [clearTypingTimers, fullHeading, fullSub, show3dLoader]);
+  }, [clearTypingTimers, fullHeading, fullSub]);
 
   const startGlow = useCallback(() => {
     if (!glowRef.current) return;
@@ -340,65 +305,18 @@ export default function Hero() {
     };
   }, [clearTypingTimers, startGlow, startTyping, stopGlow]);
 
-  useEffect(() => {
-    if (!show3dLoader && heroInViewRef.current && !typedHeading) {
-      startTyping();
-      startGlow();
-    }
-  }, [show3dLoader, startGlow, startTyping, typedHeading]);
-
   return (
     <>
-      {show3dLoader ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          aria-hidden="true"
-        >
-          <div className="w-[92%] max-w-md rounded-3xl border border-white/10 bg-neutral-950/80 p-6 text-center shadow-[0_24px_80px_-30px_rgba(0,0,0,0.9)]">
-            <p className="mt-1 text-sm font-medium text-white/70">
-              Loading your experience
-            </p>
-            <p className="mt-2 text-balance text-xl font-semibold tracking-tight text-white">
-              {loaderMessages[loaderMsgIndex]}
-            </p>
-
-            <div className="mt-4 text-sm font-semibold text-emerald-300/80">
-              {Math.round(loaderPercent)}%
-            </div>
-
-            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/10">
-              <div
-                className="h-full bg-linear-to-r from-emerald-400 via-amber-300 to-emerald-400 transition-[width] duration-500"
-                style={{ width: `${loaderPercent}%` }}
-              />
-            </div>
-
-            <p className="mt-4 text-xs text-white/50">
-              Tip: Move your mouse once it finishes loading.
-            </p>
-          </div>
-        </div>
-      ) : null}
-
       {/* Fixed viewport banner: stays put while the page scrolls (products section covers it). */}
       <div
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden bg-black"
         aria-hidden
       >
-        <div className="absolute inset-0 bg-linear-to-b from-black/55 via-black/15 to-black/55" />
-        {/* No scale on small screens — scale + WebGL canvas often causes horizontal overflow. */}
-        <div className="absolute inset-0 origin-center scale-100 md:scale-105 lg:scale-[1.12]">
-          {useHeroWebgl ? (
-            <Suspense fallback={null}>
-              <Scene onModelReady={handleSceneModelReady} />
-            </Suspense>
-          ) : (
-            <div className="absolute inset-0" aria-hidden>
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_88%_70%_at_50%_38%,rgba(249,115,22,0.2),transparent_58%),radial-gradient(ellipse_65%_55%_at_72%_62%,rgba(52,211,153,0.12),transparent_52%)]" />
-              <div className="absolute inset-0 bg-linear-to-b from-black/45 via-transparent to-black/75" />
-            </div>
-          )}
-        </div>
+        <div className="absolute inset-0 bg-linear-to-b from-slate-950/90 via-[#04120f]/85 to-black" />
+        <HeroEarthBackdrop />
+        <HeroContainerFigures />
+        <div className="absolute inset-0 z-[2] bg-linear-to-b from-black/50 via-black/20 to-black/65" />
+        <div className="absolute inset-0 z-[3] bg-[radial-gradient(ellipse_90%_65%_at_50%_42%,transparent_0%,rgba(0,0,0,0.5)_70%,rgba(0,0,0,0.85)_100%)]" />
       </div>
 
       <a
