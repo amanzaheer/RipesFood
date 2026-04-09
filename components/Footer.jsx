@@ -13,7 +13,10 @@ export default function Footer() {
       id="contact"
       className="relative z-10 scroll-mt-24 border-t border-white/10 bg-neutral-950 text-white"
     >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+      <div
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+        aria-hidden
+      >
         <div className="absolute -left-16 bottom-0 h-48 w-48 rounded-full bg-emerald-500/10 blur-3xl" />
         <div className="absolute -right-8 top-0 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl" />
       </div>
@@ -69,7 +72,7 @@ export default function Footer() {
                   href="mailto:hello@ripesfood.com"
                   className="transition-colors hover:text-white"
                 >
-                  hello@ripesfood.com
+                  ripefoods311@gmail.com
                 </a>
               </li>
               <li>
@@ -79,7 +82,7 @@ export default function Footer() {
                   href="mailto:trade@ripesfood.com"
                   className="transition-colors hover:text-white"
                 >
-                  trade@ripesfood.com
+                  ripefoods311@gmail.com
                 </a>
               </li>
             </ul>

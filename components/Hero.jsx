@@ -22,7 +22,12 @@ const HERO_CONTAINER_MOTION = [
       y: [0, 14, -20, 16, 0],
       rotate: [1.5, -2.8, 2.5, -1.6, 1.5],
     },
-    transition: { duration: 13.5, repeat: Infinity, ease: "easeInOut", delay: 0.6 },
+    transition: {
+      duration: 13.5,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay: 0.6,
+    },
   },
   {
     animate: {
@@ -30,7 +35,12 @@ const HERO_CONTAINER_MOTION = [
       y: [0, 20, -14, 22, 0],
       rotate: [0.8, -2.5, 2.2, -1.2, 0.8],
     },
-    transition: { duration: 11, repeat: Infinity, ease: "easeInOut", delay: 1.1 },
+    transition: {
+      duration: 11,
+      repeat: Infinity,
+      ease: "easeInOut",
+      delay: 1.1,
+    },
   },
 ];
 
@@ -62,7 +72,8 @@ function HeroEarthBackdrop() {
               rgba(148,163,184,0.12) 11deg 11.35deg
             )
           `,
-          maskImage: "radial-gradient(circle at 50% 50%, black 0%, black 48%, transparent 70%)",
+          maskImage:
+            "radial-gradient(circle at 50% 50%, black 0%, black 48%, transparent 70%)",
           WebkitMaskImage:
             "radial-gradient(circle at 50% 50%, black 0%, black 48%, transparent 70%)",
         }}
@@ -85,7 +96,11 @@ function HeroContainerFigures() {
         const cfg = HERO_CONTAINER_MOTION[i];
         const subtle = isReduced
           ? {
-              animate: { x: [0, 5, -4, 0], y: [0, -4, 5, 0], rotate: [0, 0.8, -0.8, 0] },
+              animate: {
+                x: [0, 5, -4, 0],
+                y: [0, -4, 5, 0],
+                rotate: [0, 0.8, -0.8, 0],
+              },
               transition: {
                 duration: 16,
                 repeat: Infinity,
@@ -233,13 +248,18 @@ export default function Hero() {
   }, []);
 
   const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER;
+  const fallbackWhatsappNumber = "03455599900";
+  const resolvedWhatsappNumber =
+    typeof whatsappNumber === "string" && whatsappNumber.trim()
+      ? whatsappNumber
+      : fallbackWhatsappNumber;
   const whatsappMessage =
     import.meta.env.VITE_WHATSAPP_MESSAGE ??
     "Hi! I’d like a quote for RipesFood products.";
   const whatsappUrl =
-    typeof whatsappNumber === "string" && whatsappNumber.trim()
+    typeof resolvedWhatsappNumber === "string" && resolvedWhatsappNumber.trim()
       ? (() => {
-          const digitsOnly = whatsappNumber.replace(/[^\d]/g, "");
+          const digitsOnly = resolvedWhatsappNumber.replace(/[^\d]/g, "");
           return digitsOnly
             ? `https://wa.me/${digitsOnly}?text=${encodeURIComponent(
                 whatsappMessage,
@@ -248,8 +268,8 @@ export default function Hero() {
         })()
       : null;
 
-  /** Always show FAB; scroll to contact if no number configured */
-  const whatsappHref = whatsappUrl ?? "#contact";
+  /** Always open WhatsApp chat using env number or project fallback. */
+  const whatsappHref = whatsappUrl ?? `https://wa.me/${fallbackWhatsappNumber}`;
 
   useEffect(() => {
     if (!sectionRef.current) return;
