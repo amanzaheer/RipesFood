@@ -74,6 +74,10 @@ export default function Footer() {
                 >
                   ripefoods311@gmail.com
                 </a>
+                <br />
+                <a href="tel:+923455599900" className="transition-colors hover:text-white">
+                  +92 345 5599900
+                </a>
               </li>
               <li>
                 <span className="text-white/50">Business inquiries</span>
