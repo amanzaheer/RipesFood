@@ -44,6 +44,28 @@ const HERO_CONTAINER_MOTION = [
   },
 ];
 
+function normalizeWhatsAppNumber(raw) {
+  if (typeof raw !== "string") return null;
+  const digits = raw.replace(/[^\d]/g, "");
+  if (!digits) return null;
+
+  // Handle international prefix like 0092...
+  if (digits.startsWith("00")) return digits.slice(2);
+
+  // Pakistan local mobile format: 03XXXXXXXXX -> 92XXXXXXXXXX
+  if (digits.startsWith("03") && digits.length === 11) {
+    return `92${digits.slice(1)}`;
+  }
+
+  // If user already entered with country code.
+  if (digits.startsWith("92")) return digits;
+
+  // Fallback: if it starts with single 0, drop it and assume Pakistan code.
+  if (digits.startsWith("0")) return `92${digits.slice(1)}`;
+
+  return digits;
+}
+
 function HeroEarthBackdrop() {
   return (
     <div
@@ -256,20 +278,15 @@ export default function Hero() {
   const whatsappMessage =
     import.meta.env.VITE_WHATSAPP_MESSAGE ??
     "Hi! I’d like a quote for RipesFood products.";
-  const whatsappUrl =
-    typeof resolvedWhatsappNumber === "string" && resolvedWhatsappNumber.trim()
-      ? (() => {
-          const digitsOnly = resolvedWhatsappNumber.replace(/[^\d]/g, "");
-          return digitsOnly
-            ? `https://wa.me/${digitsOnly}?text=${encodeURIComponent(
-                whatsappMessage,
-              )}`
-            : null;
-        })()
-      : null;
+  const whatsappE164 = normalizeWhatsAppNumber(resolvedWhatsappNumber);
+  const whatsappUrl = whatsappE164
+    ? `https://wa.me/${whatsappE164}?text=${encodeURIComponent(whatsappMessage)}`
+    : null;
 
   /** Always open WhatsApp chat using env number or project fallback. */
-  const whatsappHref = whatsappUrl ?? `https://wa.me/${fallbackWhatsappNumber}`;
+  const whatsappHref =
+    whatsappUrl ??
+    `https://wa.me/${normalizeWhatsAppNumber(fallbackWhatsappNumber)}`;
 
   useEffect(() => {
     if (!sectionRef.current) return;
